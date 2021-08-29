@@ -26,3 +26,17 @@ some, but it's not completely nessecary. (see LICENSE)
 You can contact me on Twitter at twitter.com/compyfanman486,
 or on Discord @zulc22#9801 about anything relating to the game
 if you feel reason to.
+
+== COMPILING ==
+
+Graphics are in png format in /gfx/*.png (except the CTIA palette)
+To recompile `sprites.inc` to reflect graphics changes,
+    - run /gfx/makesprites.bat (Windows)
+    - type 'python3 mcspazitron.py > sprites.inc' in the terminal (*nix)
+(Requires Python 3.x and Pillow on your system either way)
+
+To compile the game itself,
+    - run /make.bat or /make&run.bat (Windows)
+    - type 'asm6 -l disk.s 800bros.xex' (*nix)
+(Requires asm6 to be installed on *nix.
+ A Windows copy of asm6 comes with the repository)
