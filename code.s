@@ -23,6 +23,8 @@ entry:
     clc
 
     jsr srSetDisplay
+    jsr srLoadSprite
+    DW dSprMarioBigStand
 
 loop:
 
@@ -30,9 +32,6 @@ loop:
     clc
     
     jsr srWaitVSync
-
-    jsr srLoadSprite
-    DW dSprMarioBigStand
 
     jmp loop
 
@@ -61,7 +60,7 @@ srLoadSprite:
     ; Get addr from after jsr call
     pla
     clc
-    adc #2
+    adc #1
     sta vwTempWord
     pla
     sta vwTempWord+1
