@@ -9,6 +9,10 @@
 
               Under the WTFPL (see LICENSE).
 
+The game is alpha-quality and is nowhere near playable or
+complete yet, so don't expect much. I'll probably abandon
+this next week because of neurodivergency. If this gets
+anywhere I'll be surprised
 
 Things you can do with my game:
 
