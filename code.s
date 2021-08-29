@@ -49,7 +49,7 @@ srSetDisplay:
     lda #<mDisplayList
     sta DLISTL
 
-    lda #<mDMARAM ; Give ANTIC DMARAM addr
+    lda #>mDMARAM ; Give ANTIC DMARAM addr
     sta PMBASE
 
     lda #20 ; set up p0
