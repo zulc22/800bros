@@ -11,12 +11,6 @@ vwTempWord2: DSW 1
 
 ENDE
 
-ENUM $2000
-
-mDMARAM: DSB $FFF
-
-ENDE
-
 entry:
     sei
     cld
@@ -151,3 +145,5 @@ mCharRAM:
 DB 0
 DB "  HELLO WORLD !!!  " AS_ATASCII
 PAD mCharRAM+$400, "A" AS_ATASCII
+
+mDMARAM = $2000
