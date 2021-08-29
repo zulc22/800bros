@@ -26,6 +26,8 @@ entry:
     jsr srLoadSprite
     DW dSprMarioBigStand
 
+    ; Why isn't any sprite showing?
+
 loop:
 
     inc mCharRAM
@@ -39,24 +41,29 @@ srSetDisplay:
     lda #%00111010
     sta DMACTL
 
-    lda #>mDisplayList
+    lda #$40 ; OS default NMI
+    sta NMIEN
+
+    lda #>mDisplayList ; Give ANTIC displaylist
     sta DLISTH
     lda #<mDisplayList
     sta DLISTL
 
-    lda #<mDMARAM
+    lda #<mDMARAM ; Give ANTIC DMARAM addr
     sta PMBASE
 
-    lda #20
+    lda #20 ; set up p0
     sta HPOSP0
-    lda dSprMarioBigStand+0
+
+    lda dSprMarioBigStand+0 ; TODO: move this to srLoadSprite
     sta SIZEP0
-    lda #2 ; Tell CTIA to recieve DMA
+
+    lda #%00000010 ; Tell CTIA to recieve DMA
     sta GRACTL
 
     rts
 
-srLoadSprite:
+srLoadSprite:   ; Loads a sprite('s C1) into dDMARAM
     ; Get addr from after jsr call
     pla
     clc
@@ -88,7 +95,7 @@ srLoadSprite:
 
     ldy #0
 @l: lda (vwTempWord2),y
-    sta mDMARAM+$200,y
+    sta mDMARAM+$400,y
     dex
     beq @r
     iny

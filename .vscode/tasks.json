@@ -1,0 +1,12 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "type": "shell",
+            "label": "Make and run",
+            "windows": {
+                "command": "& '.\\make&run.bat'"
+            }
+        }
+    ]
+}
