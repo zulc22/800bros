@@ -41,6 +41,6 @@ To recompile `sprites.inc` to reflect graphics changes,
 
 To compile the game itself,
     - run /make.bat or /make&run.bat (Windows)
-    - type 'asm6 -l disk.s 800bros.xex' (*nix)
+    - type 'asm6 -l xex.s 800bros.xex' (*nix)
 (Requires asm6 to be installed on *nix. asm6f works as a drop-in replacement as well
  A Windows copy of asm6 comes with the repository)
