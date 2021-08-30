@@ -1,4 +1,4 @@
-ORG 0
+; XEX (A8)
 
 DW $FFFF ; first block
 

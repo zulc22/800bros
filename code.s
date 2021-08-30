@@ -4,21 +4,58 @@ INCLUDE "ataridef.s"
 INCLUDE "gfx/sprites.inc"
 
 ; Vars
-ENUM $800
+ENUM $600
 
-vwTempWord: DSW 1
-vwTempWord2: DSW 1
+vwTempWord:     DSW 1
+vwTempWord2:    DSW 1
+vwTempWord3:    DSW 1
 
 ENDE
+ENUM $2000
+
+mDMARAM:        DSB $1000
+mCharRAM:       DSB $400
+mDisplayList:   DSB $100
+
+ENDE
+
+MACRO phab byte
+    lda byte
+    pha
+ENDM
+
+MACRO phaw word
+    phab >word
+    phab <word
+ENDM
+
+MACRO plab byteloc
+    pla
+    sta byteloc
+ENDM
+
+MACRO plaw wordloc
+    plab wordloc
+    plab wordloc+1
+ENDM
 
 entry:
     sei
     cld
     clc
 
+    phaw dChars
+    phaw mCharRAM
+    jsr srDataCopy
+
+    phaw dDisplayList
+    phaw mDisplayList
+    jsr srDataCopy
+    
     jsr srSetDisplay
+
+    phaw dSprMarioBigJump
     jsr srLoadSprite
-    DW dSprMarioBigStand
 
     ; Why isn't any sprite showing?
 
@@ -31,12 +68,18 @@ loop:
 
     jmp loop
 
+nmi:
+irq:
+    rti
+
 srSetDisplay:
     lda #%00111010
     sta DMACTL
 
-    lda #$40 ; OS default NMI
+    lda #0
     sta NMIEN
+    lda #0
+    sta IRQEN
 
     lda #>mDisplayList ; Give ANTIC displaylist
     sta DLISTH
@@ -49,7 +92,7 @@ srSetDisplay:
     lda #20 ; set up p0
     sta HPOSP0
 
-    lda dSprMarioBigStand+0 ; TODO: move this to srLoadSprite
+    lda #$FF
     sta SIZEP0
 
     lda #%00000010 ; Tell CTIA to recieve DMA
@@ -58,34 +101,26 @@ srSetDisplay:
     rts
 
 srLoadSprite:   ; Loads a sprite('s C1) into dDMARAM
-    ; Get addr from after jsr call
-    pla
-    clc
-    adc #1
-    sta vwTempWord
-    pla
-    sta vwTempWord+1
-    bcc @nc
-    inc vwTempWord
-@nc:
-    
+    plaw vwTempWord
+    plaw vwTempWord2
+
     ; Load size and color
     ldy #0
-    lda (vwTempWord),y
+    lda (vwTempWord2),y
     sta SIZEP0
     tax ; save on x because we can't read SIZEPx
     iny
-    lda (vwTempWord),y
+    lda (vwTempWord2),y
     sta COLPM0
     iny ; skip other two colors
     iny
     
     ; Load sprite ptr
-    lda (vwTempWord),y
-    sta vwTempWord2
+    lda (vwTempWord2),y
+    sta vwTempWord3
     iny
-    lda (vwTempWord),y
-    sta vwTempWord2+1
+    lda (vwTempWord2),y
+    sta vwTempWord3+1
 
     ldy #0
 @l: lda (vwTempWord2),y
@@ -95,8 +130,7 @@ srLoadSprite:   ; Loads a sprite('s C1) into dDMARAM
     iny
     jmp @l
 
-@r: ; Return
-    jmp (vwTempWord)
+@r: jmp (vwTempWord)
 
 srWaitVSync:    ; Wait until VCOUNT=0
 @l: sta WSYNC   ; wait for value to change
@@ -106,44 +140,81 @@ srWaitVSync:    ; Wait until VCOUNT=0
     jmp @l
 @r: rts
 
-mDisplayList:
+srFillPage:
+    lda #$FF
+    ldx #0
+@f: sta $2200,x
+    sta $2400,x
+    inx
+    beq @r
+    jmp @f
+@r: rts
 
-DB $70, $70, $70 ; vblank (24 lines)
+srDataCopy:
+    ; Get addr from after jsr call
+    plaw vwTempWord
+    plaw vwTempWord2
+    plaw vwTempWord3
 
-DB $40 + $02 ; Load Memory Scan... Do Mode 4
-DW mCharRAM
+    ldx #0
+    lda (vwTempWord2),x
+    tay
+    inc vwTempWord2+1
+    bcc @nc
+    inc vwTempWord2
+@nc:
 
-; Tiles
-DB $02
-DB $02
-DB $02
-DB $02
-DB $02
-DB $02
-DB $02
-DB $02
-DB $02
-DB $02
-DB $02
-DB $02
-DB $02
-DB $02
-DB $02
-DB $02
-DB $02
-DB $02
-DB $02
-DB $02
-DB $02
-DB $02
-DB $02
+@c: lda (vwTempWord2),x
+    sta (vwTempWord3),x
+    dey
+    beq @d
+    inx
+    jmp @c
+@d:
+    ; Return
+    jmp (vwTempWord)
 
-DB $41 ; Jump after JVB
-DW mDisplayList
 
-mCharRAM:
-DB 0
-DB "  HELLO WORLD !!!  " AS_ATASCII
-PAD mCharRAM+$400, "A" AS_ATASCII
+dDisplayList:
+DB dDisplayList-dDisplayListEnd
 
-mDMARAM = $2000
+    DB $70, $70, $70 ; vblank (24 lines)
+
+    DB $40 + $02 ; Load Memory Scan... Do Mode 4
+    DW mCharRAM
+
+    ; Tiles
+    DB $02
+    DB $02
+    DB $02
+    DB $02
+    DB $02
+    DB $02
+    DB $02
+    DB $02
+    DB $02
+    DB $02
+    DB $02
+    DB $02
+    DB $02
+    DB $02
+    DB $02
+    DB $02
+    DB $02
+    DB $02
+    DB $02
+    DB $02
+    DB $02
+    DB $02
+    DB $02
+
+    DB $41 ; Jump after JVB
+    DW mDisplayList
+
+dDisplayListEnd:
+
+dChars:
+DB dChars-dCharsEnd
+    DB 0
+    DB "  HELLO WORLD !!!  " AS_ATASCII
+dCharsEnd:
