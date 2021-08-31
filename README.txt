@@ -7,7 +7,7 @@
 
       Written in 6502 assembler, compiled with ASM6.
 
-              Under the WTFPL (see LICENSE).
+            Under the Unlicense (see LICENSE).
 
 The game is alpha-quality and is nowhere near playable or
 complete yet, so don't expect much. I'll probably abandon
