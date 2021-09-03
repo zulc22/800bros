@@ -4,14 +4,14 @@ INCLUDE "ataridef.s"
 INCLUDE "gfx/sprites.inc"
 
 ; Vars
-ENUM $600
+ENUM $800
 
 vwTempWord:     DSW 1
 vwTempWord2:    DSW 1
 vwTempWord3:    DSW 1
 
 ENDE
-ENUM $2000
+ENUM $4000
 
 mDMARAM:        DSB $1000
 mCharRAM:       DSB $400
@@ -25,8 +25,13 @@ MACRO phab byte
 ENDM
 
 MACRO phaw word
-    phab >word
     phab <word
+    phab >word
+ENDM
+
+MACRO phawi word
+    phab #<word
+    phab #>word
 ENDM
 
 MACRO plab byteloc
@@ -39,22 +44,28 @@ MACRO plaw wordloc
     plab wordloc+1
 ENDM
 
+MACRO kil
+    DB $02
+ENDM
+
 entry:
     sei
     cld
     clc
 
-    phaw dChars
-    phaw mCharRAM
+    jsr srSelfTest
+
+    phawi dChars
+    phawi mCharRAM
     jsr srDataCopy
 
-    phaw dDisplayList
-    phaw mDisplayList
+    phawi dDisplayList
+    phawi mDisplayList
     jsr srDataCopy
     
     jsr srSetDisplay
 
-    phaw dSprMarioBigJump
+    phawi dSprMarioBigJump
     jsr srLoadSprite
 
     ; Why isn't any sprite showing?
@@ -68,9 +79,33 @@ loop:
 
     jmp loop
 
+; Unused -- I haven't figured out how to
+; set the NMI/IRQ/RESET vector yet :(
 nmi:
 irq:
     rti
+
+srSelfTest: ; Self-test macros and other stuff for debugging
+
+    phawi $00FF
+    plaw vwTempWord
+
+    ; ram should be 'FF 00'
+    lda vwTempWord
+    cmp #$FF
+    bne @f
+    lda vwTempWord+1
+; ( cmp #$00 )
+    bne @f
+
+
+
+    jmp @s
+
+@f: kil
+    jmp @f
+
+@s: rts
 
 srSetDisplay:
     lda #%00111010
@@ -140,21 +175,10 @@ srWaitVSync:    ; Wait until VCOUNT=0
     jmp @l
 @r: rts
 
-srFillPage:
-    lda #$FF
-    ldx #0
-@f: sta $2200,x
-    sta $2400,x
-    inx
-    beq @r
-    jmp @f
-@r: rts
-
 srDataCopy:
-    ; Get addr from after jsr call
-    plaw vwTempWord
-    plaw vwTempWord2
-    plaw vwTempWord3
+    plaw vwTempWord  ; pull return address 
+    plaw vwTempWord3 ; pull data target addr
+    plaw vwTempWord2 ; pull data source addr
 
     ldx #0
     lda (vwTempWord2),x
@@ -170,13 +194,11 @@ srDataCopy:
     beq @d
     inx
     jmp @c
-@d:
-    ; Return
+@d: ; Return
     jmp (vwTempWord)
 
-
 dDisplayList:
-DB dDisplayList-dDisplayListEnd
+DB dDisplayListEnd-dDisplayList
 
     DB $70, $70, $70 ; vblank (24 lines)
 
@@ -214,7 +236,7 @@ DB dDisplayList-dDisplayListEnd
 dDisplayListEnd:
 
 dChars:
-DB dChars-dCharsEnd
+DB dCharsEnd-dChars
     DB 0
     DB "  HELLO WORLD !!!  " AS_ATASCII
 dCharsEnd:

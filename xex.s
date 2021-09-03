@@ -2,9 +2,11 @@
 
 DW $FFFF ; first block
 
-DW CODE_start, CODE_end+1
+DW CODE_start, CODE_end ; +1 
 
-BASE $1000
+BASE $2000
 CODE_start:
 INCLUDE "code.s"
+
+DB 0
 CODE_end:
