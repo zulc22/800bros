@@ -1,2 +1,2 @@
 @cd /d "%~dp0"
-@py mcspazitron.py > sprites.inc
+py -3 mcspazitron.py > sprites.inc

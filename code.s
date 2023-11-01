@@ -19,33 +19,51 @@ mDisplayList:   DSB $100
 
 ENDE
 
-MACRO phab byte
-    lda byte
+; Affects: Stack, A
+; Push byte (immediate)
+MACRO phab_i value
+    lda #value
     pha
 ENDM
 
-MACRO phaw word
-    phab <word
-    phab >word
+; Affects: Stack, A
+; Push byte (from address)
+MACRO phab_a valueloc
+	lda valueloc
+	pha
 ENDM
 
-MACRO phawi word
-    phab #<word
-    phab #>word
+; Affects: Stack, A
+; Push word (immediate)
+MACRO phaw_i value
+	phab_i >value
+	phab_i <value
 ENDM
 
-MACRO plab byteloc
+; Affects: Stack, A
+; Push word (from address)
+MACRO phaw_a valueloc
+    phab_a >valueloc
+    phab_a <valueloc
+ENDM
+
+; Affects: Stack, A
+; Pull and store byte in memory
+MACRO pla_sb byteloc
     pla
     sta byteloc
 ENDM
 
-MACRO plaw wordloc
+; Affects: Stack, A
+; Pull word into memory
+MACRO pla_sw wordloc
     plab wordloc
     plab wordloc+1
 ENDM
 
+; Stop processor
 MACRO kil
-    DB $02
+    DB $42
 ENDM
 
 entry:
@@ -55,21 +73,22 @@ entry:
 
     jsr srSelfTest
 
-    phawi dChars
-    phawi mCharRAM
+    phaw_i dChars
+    phaw_i mCharRAM
     jsr srDataCopy
+	jmp loop
 
-    phawi dDisplayList
-    phawi mDisplayList
+    phaw_i dDisplayList
+    phaw_i mDisplayList
     jsr srDataCopy
     
     jsr srSetDisplay
-
-    phawi dSprMarioBigJump
+	
+    phaw_i dSprMarioBigJump
     jsr srLoadSprite
 
     ; Why isn't any sprite showing?
-
+	
 loop:
 
     inc mCharRAM
@@ -78,7 +97,7 @@ loop:
     jsr srWaitVSync
 
     jmp loop
-
+	
 ; Unused -- I haven't figured out how to
 ; set the NMI/IRQ/RESET vector yet :(
 nmi:
@@ -87,25 +106,20 @@ irq:
 
 srSelfTest: ; Self-test macros and other stuff for debugging
 
-    phawi $00FF
+    phaw $00FF
     plaw vwTempWord
 
     ; ram should be 'FF 00'
     lda vwTempWord
     cmp #$FF
-    bne @f
+    bne +
     lda vwTempWord+1
-; ( cmp #$00 )
-    bne @f
+    cmp #$00
+    bne +
+    rts
 
-
-
-    jmp @s
-
-@f: kil
-    jmp @f
-
-@s: rts
++:  kil
+    jmp +
 
 srSetDisplay:
     lda #%00111010
@@ -175,26 +189,28 @@ srWaitVSync:    ; Wait until VCOUNT=0
     jmp @l
 @r: rts
 
+
+; Copy data.
+; Stackargs(source_address, target_address)
+; source: db length, db data[length]
 srDataCopy:
-    plaw vwTempWord  ; pull return address 
-    plaw vwTempWord3 ; pull data target addr
-    plaw vwTempWord2 ; pull data source addr
+    pla_sw vwTempWord  ; pull return address 
+    pla_sw vwTempWord3 ; pull data target addr
+    pla_sw vwTempWord2 ; pull data source addr
 
     ldx #0
     lda (vwTempWord2),x
     tay
     inc vwTempWord2+1
-    bcc @nc
+    bcc +
     inc vwTempWord2
-@nc:
-
-@c: lda (vwTempWord2),x
++:-:lda (vwTempWord2),x
     sta (vwTempWord3),x
     dey
-    beq @d
+    beq +
     inx
-    jmp @c
-@d: ; Return
+    jmp -
++:  ; Return
     jmp (vwTempWord)
 
 dDisplayList:
